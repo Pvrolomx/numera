@@ -100,8 +100,8 @@ export default function Home() {
       <main className="min-h-screen p-4 max-w-md mx-auto">
         {/* Header */}
         <header className="text-center mb-6 relative">
-          <h1 className="text-3xl font-bold gradient-gold">{t.appName}</h1>
-          <p className="text-gold/60 text-sm">{t.tagline}</p>
+          <h1 className="text-3xl font-bold gradient-gold" style={{textShadow: "0 0 30px rgba(212,175,55,0.8), 0 0 60px rgba(212,175,55,0.4)"}}>{t.appName}</h1>
+          <p className="text-gold/80 text-sm" style={{textShadow: "0 2px 8px rgba(0,0,0,0.8)"}}>{t.tagline}</p>
           
           {/* Language Toggle */}
           <button
@@ -197,13 +197,13 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
       
       <div className="text-center mb-8">
         <Sparkles className="text-gold mx-auto mb-4" size={48} />
-        <h1 className="text-4xl font-bold gradient-gold mb-2">{t.appName}</h1>
-        <p className="text-white/60">{t.onboardingTitle}</p>
+        <h1 className="text-4xl font-bold gradient-gold mb-2" style={{textShadow: "0 0 30px rgba(212,175,55,0.8), 0 0 60px rgba(212,175,55,0.4)"}}>{t.appName}</h1>
+        <p className="text-gold/80 font-medium" style={{textShadow: "0 2px 10px rgba(0,0,0,0.8)"}}>{t.onboardingTitle}</p>
       </div>
       
       <div className="w-full max-w-sm space-y-4">
         <div>
-          <label className="block text-gold/80 text-sm mb-2">{t.nameLabel}</label>
+          <label className="block text-gold text-sm mb-2 font-medium" style={{textShadow: "0 2px 8px rgba(0,0,0,0.9)"}}>{t.nameLabel}</label>
           <input
             type="text"
             value={name}
@@ -214,7 +214,7 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
         </div>
         
         <div>
-          <label className="block text-gold/80 text-sm mb-2">{t.birthLabel}</label>
+          <label className="block text-gold text-sm mb-2 font-medium" style={{textShadow: "0 2px 8px rgba(0,0,0,0.9)"}}>{t.birthLabel}</label>
           <input
             type="date"
             value={birthDate}
