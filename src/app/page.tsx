@@ -135,6 +135,11 @@ export default function Home() {
       >
         Resetear datos
       </button>
+      
+      {/* Footer */}
+      <footer className="mt-6 text-center text-white/20 text-xs pb-4">
+        Hecho por <a href="https://duendes.app" className="text-gold/40 hover:text-gold/60">duendes.app</a> 2026
+      </footer>
     </main>
   );
 }
