@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #D4AF37;
+  --gold-light: #F4D03F;
+  --mystic-bg: #0a0a1a;
+  --mystic-card: #12122a;
+  --mystic-purple: #8B5CF6;
+}
+
+body {
+  background: var(--mystic-bg);
+  color: #fff;
+  min-height: 100vh;
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.card-mystic {
+  background: var(--mystic-card);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 1rem;
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
