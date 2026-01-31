@@ -141,11 +141,11 @@ export const calculateBiorhythms = (
   return { physical, emotional, intellectual, isCritical, powerDay };
 };
 
-// Resonancia numérica
+// Resonancia numérica (fix: usar escala de 9 para rango 0-100%)
 export const resonance = (a: number, b: number): number => {
   const rootA = digitRoot(a);
   const rootB = digitRoot(b);
-  return Math.round(100 * (1 - Math.abs(rootA - rootB) / 4.5));
+  return Math.round(100 * (1 - Math.abs(rootA - rootB) / 9));
 };
 
 // Interpretaciones de números
