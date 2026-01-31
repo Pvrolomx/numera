@@ -1,21 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { 
   calculateProfile, 
   calculateBiorhythms, 
   calculatePythagorasMatrix,
-  numberMeanings,
   resonance,
   NumerologyProfile,
   BiorhythmData,
   PythagorasMatrix
 } from '@/lib/numerology';
+import { translations, Lang, Translations } from '@/lib/translations';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   ResponsiveContainer, ReferenceLine, Tooltip 
 } from 'recharts';
-import { User, Calendar, Sparkles, Users, Grid3X3, Activity } from 'lucide-react';
+import { User, Calendar, Sparkles, Users, Grid3X3, Activity, Globe } from 'lucide-react';
+
+// Language Context
+const LangContext = createContext<{ lang: Lang; t: Translations; setLang: (l: Lang) => void }>({
+  lang: 'es',
+  t: translations.es,
+  setLang: () => {}
+});
+
+const useLang = () => useContext(LangContext);
 
 interface UserData {
   name: string;
@@ -29,14 +38,23 @@ export default function Home() {
   const [biorhythms, setBiorhythms] = useState<BiorhythmData | null>(null);
   const [matrix, setMatrix] = useState<PythagorasMatrix | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [lang, setLang] = useState<Lang>('es');
+  
+  const t = translations[lang];
   
   // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('numera_user');
-    if (saved) {
-      setUserData(JSON.parse(saved));
-    }
+    if (saved) setUserData(JSON.parse(saved));
+    const savedLang = localStorage.getItem('numera_lang') as Lang;
+    if (savedLang) setLang(savedLang);
   }, []);
+  
+  // Save language preference
+  const handleSetLang = (newLang: Lang) => {
+    setLang(newLang);
+    localStorage.setItem('numera_lang', newLang);
+  };
   
   // Calculate everything when userData changes
   useEffect(() => {
@@ -48,14 +66,13 @@ export default function Home() {
       setBiorhythms(calculateBiorhythms(birthDate, today));
       setMatrix(calculatePythagorasMatrix(birthDate));
       
-      // Generate chart data for 30 days
       const data = [];
       for (let i = -15; i <= 15; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
         const bio = calculateBiorhythms(birthDate, date);
         data.push({
-          day: i === 0 ? 'Hoy' : i > 0 ? `+${i}` : `${i}`,
+          day: i === 0 ? (lang === 'es' ? 'Hoy' : 'Today') : i > 0 ? `+${i}` : `${i}`,
           physical: Math.round(bio.physical * 100),
           emotional: Math.round(bio.emotional * 100),
           intellectual: Math.round(bio.intellectual * 100),
@@ -64,83 +81,98 @@ export default function Home() {
       }
       setChartData(data);
     }
-  }, [userData]);
+  }, [userData, lang]);
   
   // Onboarding
   if (!userData) {
-    return <Onboarding onComplete={(data) => {
-      localStorage.setItem('numera_user', JSON.stringify(data));
-      setUserData(data);
-    }} />;
+    return (
+      <LangContext.Provider value={{ lang, t, setLang: handleSetLang }}>
+        <Onboarding onComplete={(data) => {
+          localStorage.setItem('numera_user', JSON.stringify(data));
+          setUserData(data);
+        }} />
+      </LangContext.Provider>
+    );
   }
   
   return (
-    <main className="min-h-screen p-4 max-w-md mx-auto">
-      {/* Header */}
-      <header className="text-center mb-6">
-        <h1 className="text-3xl font-bold gradient-gold">NUMERA</h1>
-        <p className="text-gold/60 text-sm">Tu código personal decodificado</p>
-      </header>
-      
-      {/* Navigation */}
-      <nav className="flex justify-around mb-6 card-mystic p-2">
-        {[
-          { id: 'dashboard', icon: Activity, label: 'Hoy' },
-          { id: 'profile', icon: User, label: 'Perfil' },
-          { id: 'calendar', icon: Calendar, label: 'Mes' },
-          { id: 'compatibility', icon: Users, label: 'Match' },
-        ].map(({ id, icon: Icon, label }) => (
+    <LangContext.Provider value={{ lang, t, setLang: handleSetLang }}>
+      <main className="min-h-screen p-4 max-w-md mx-auto">
+        {/* Header */}
+        <header className="text-center mb-6 relative">
+          <h1 className="text-3xl font-bold gradient-gold">{t.appName}</h1>
+          <p className="text-gold/60 text-sm">{t.tagline}</p>
+          
+          {/* Language Toggle */}
           <button
-            key={id}
-            onClick={() => setActiveTab(id as any)}
-            className={`flex flex-col items-center p-2 rounded-lg transition-all ${
-              activeTab === id ? 'text-gold bg-gold/10' : 'text-white/50 hover:text-white'
-            }`}
+            onClick={() => handleSetLang(lang === 'es' ? 'en' : 'es')}
+            className="absolute right-0 top-0 flex items-center gap-1 text-xs text-white/50 hover:text-gold transition-colors bg-mystic-card px-2 py-1 rounded-full border border-gold/20"
           >
-            <Icon size={20} />
-            <span className="text-xs mt-1">{label}</span>
+            <Globe size={14} />
+            {lang.toUpperCase()}
           </button>
-        ))}
-      </nav>
-      
-      {/* Content */}
-      {activeTab === 'dashboard' && profile && biorhythms && (
-        <Dashboard 
-          name={userData.name}
-          profile={profile} 
-          biorhythms={biorhythms} 
-          chartData={chartData}
-        />
-      )}
-      
-      {activeTab === 'profile' && profile && matrix && (
-        <Profile profile={profile} matrix={matrix} />
-      )}
-      
-      {activeTab === 'calendar' && userData && (
-        <CalendarView birthDate={new Date(userData.birthDate)} lifeNumber={profile?.lifeNumber || 1} />
-      )}
-      
-      {activeTab === 'compatibility' && userData && (
-        <Compatibility userData={userData} />
-      )}
-      
-      {/* Reset button */}
-      <button 
-        onClick={() => {
-          localStorage.removeItem('numera_user');
-          setUserData(null);
-        }}
-        className="mt-8 text-white/30 text-xs w-full text-center hover:text-white/50"
-      >
-        Resetear datos
-      </button>
-      
-      {/* Footer */}
-      <footer className="mt-6 text-center text-white/20 text-xs pb-4">
-        Hecho por <a href="https://duendes.app" className="text-gold/40 hover:text-gold/60">duendes.app</a> 2026
-      </footer>
-    </main>
+        </header>
+        
+        {/* Navigation */}
+        <nav className="flex justify-around mb-6 card-mystic p-2">
+          {[
+            { id: 'dashboard', icon: Activity, label: t.navToday },
+            { id: 'profile', icon: User, label: t.navProfile },
+            { id: 'calendar', icon: Calendar, label: t.navMonth },
+            { id: 'compatibility', icon: Users, label: t.navMatch },
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              className={`flex flex-col items-center p-2 rounded-lg transition-all ${
+                activeTab === id ? 'text-gold bg-gold/10' : 'text-white/50 hover:text-white'
+              }`}
+            >
+              <Icon size={20} />
+              <span className="text-xs mt-1">{label}</span>
+            </button>
+          ))}
+        </nav>
+        
+        {/* Content */}
+        {activeTab === 'dashboard' && profile && biorhythms && (
+          <Dashboard 
+            name={userData.name}
+            profile={profile} 
+            biorhythms={biorhythms} 
+            chartData={chartData}
+          />
+        )}
+        
+        {activeTab === 'profile' && profile && matrix && (
+          <Profile profile={profile} matrix={matrix} />
+        )}
+        
+        {activeTab === 'calendar' && userData && (
+          <CalendarView birthDate={new Date(userData.birthDate)} lifeNumber={profile?.lifeNumber || 1} />
+        )}
+        
+        {activeTab === 'compatibility' && userData && (
+          <Compatibility userData={userData} />
+        )}
+        
+        {/* Reset button */}
+        <button 
+          onClick={() => {
+            localStorage.removeItem('numera_user');
+            setUserData(null);
+          }}
+          className="mt-8 text-white/30 text-xs w-full text-center hover:text-white/50"
+        >
+          {t.resetData}
+        </button>
+        
+        {/* Footer */}
+        <footer className="mt-6 text-center text-white/20 text-xs pb-4">
+          {t.madeBy} <a href="https://duendes.app" className="text-gold/40 hover:text-gold/60">duendes.app</a> 2026
+        </footer>
+      </main>
+    </LangContext.Provider>
   );
 }
 
@@ -148,31 +180,41 @@ export default function Home() {
 // ONBOARDING COMPONENT
 // ============================================
 function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
+  const { t, lang, setLang } = useLang();
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      {/* Language Toggle */}
+      <button
+        onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
+        className="absolute right-4 top-4 flex items-center gap-1 text-xs text-white/50 hover:text-gold transition-colors bg-mystic-card px-2 py-1 rounded-full border border-gold/20"
+      >
+        <Globe size={14} />
+        {lang.toUpperCase()}
+      </button>
+      
       <div className="text-center mb-8">
         <Sparkles className="text-gold mx-auto mb-4" size={48} />
-        <h1 className="text-4xl font-bold gradient-gold mb-2">NUMERA</h1>
-        <p className="text-white/60">Descubre tu código personal</p>
+        <h1 className="text-4xl font-bold gradient-gold mb-2">{t.appName}</h1>
+        <p className="text-white/60">{t.onboardingTitle}</p>
       </div>
       
       <div className="w-full max-w-sm space-y-4">
         <div>
-          <label className="block text-gold/80 text-sm mb-2">Tu nombre completo</label>
+          <label className="block text-gold/80 text-sm mb-2">{t.nameLabel}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full bg-mystic-card border border-gold/20 rounded-lg p-3 text-white focus:border-gold focus:outline-none"
-            placeholder="Como aparece en tu acta"
+            placeholder={t.namePlaceholder}
           />
         </div>
         
         <div>
-          <label className="block text-gold/80 text-sm mb-2">Fecha de nacimiento</label>
+          <label className="block text-gold/80 text-sm mb-2">{t.birthLabel}</label>
           <input
             type="date"
             value={birthDate}
@@ -186,7 +228,7 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
           disabled={!name || !birthDate}
           className="w-full bg-gold text-mystic-bg font-semibold py-3 rounded-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gold-light transition-colors"
         >
-          Calcular mi código
+          {t.calculateBtn}
         </button>
       </div>
     </main>
@@ -204,31 +246,32 @@ function Dashboard({
   biorhythms: BiorhythmData;
   chartData: any[];
 }) {
-  const meaning = numberMeanings[profile.lifeNumber];
+  const { t } = useLang();
+  const meaning = t.meanings[profile.lifeNumber as keyof typeof t.meanings];
   
   return (
     <div className="space-y-4">
       {/* Today's Summary */}
       <div className="card-mystic p-4">
-        <h2 className="text-gold font-semibold mb-1">Hoy, {name.split(' ')[0]}</h2>
+        <h2 className="text-gold font-semibold mb-1">{t.todayGreeting} {name.split(' ')[0]}</h2>
         <p className="text-white/60 text-sm mb-3">
-          Tu número de vida es <span className="text-gold font-bold">{profile.lifeNumber}</span> - {meaning?.title}
+          {t.lifeNumberIs} <span className="text-gold font-bold">{profile.lifeNumber}</span> - {meaning?.title}
         </p>
         
         {biorhythms.powerDay && (
           <div className="bg-gold/20 border border-gold/40 rounded-lg p-3 mb-3">
-            <p className="text-gold text-sm font-semibold">⚡ DÍA DE PODER</p>
-            <p className="text-white/70 text-xs">Múltiples ciclos en sincronía positiva</p>
+            <p className="text-gold text-sm font-semibold">{t.powerDay}</p>
+            <p className="text-white/70 text-xs">{t.powerDayDesc}</p>
           </div>
         )}
         
         {(biorhythms.isCritical.physical || biorhythms.isCritical.emotional || biorhythms.isCritical.intellectual) && (
           <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-3 mb-3">
-            <p className="text-red-400 text-sm font-semibold">⚠️ Día Crítico</p>
+            <p className="text-red-400 text-sm font-semibold">{t.criticalDay}</p>
             <p className="text-white/70 text-xs">
-              {biorhythms.isCritical.physical && 'Físico '} 
-              {biorhythms.isCritical.emotional && 'Emocional '} 
-              {biorhythms.isCritical.intellectual && 'Intelectual'}
+              {biorhythms.isCritical.physical && `${t.physical} `} 
+              {biorhythms.isCritical.emotional && `${t.emotional} `} 
+              {biorhythms.isCritical.intellectual && t.intellectual}
             </p>
           </div>
         )}
@@ -236,12 +279,12 @@ function Dashboard({
       
       {/* Biorhythm Meters */}
       <div className="card-mystic p-4">
-        <h3 className="text-white/80 text-sm mb-3">Tus Biorritmos Hoy</h3>
+        <h3 className="text-white/80 text-sm mb-3">{t.biorhythmsToday}</h3>
         
         {[
-          { label: 'Físico', value: biorhythms.physical, color: '#EF4444' },
-          { label: 'Emocional', value: biorhythms.emotional, color: '#3B82F6' },
-          { label: 'Intelectual', value: biorhythms.intellectual, color: '#22C55E' },
+          { label: t.physical, value: biorhythms.physical, color: '#EF4444' },
+          { label: t.emotional, value: biorhythms.emotional, color: '#3B82F6' },
+          { label: t.intellectual, value: biorhythms.intellectual, color: '#22C55E' },
         ].map(({ label, value, color }) => (
           <div key={label} className="mb-3">
             <div className="flex justify-between text-sm mb-1">
@@ -264,7 +307,7 @@ function Dashboard({
       
       {/* Chart */}
       <div className="card-mystic p-4">
-        <h3 className="text-white/80 text-sm mb-3">Próximos 15 días</h3>
+        <h3 className="text-white/80 text-sm mb-3">{t.next15days}</h3>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
@@ -281,9 +324,9 @@ function Dashboard({
           </LineChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-4 mt-2 text-xs">
-          <span className="text-red-500">● Físico</span>
-          <span className="text-blue-500">● Emocional</span>
-          <span className="text-green-500">● Intelectual</span>
+          <span className="text-red-500">● {t.physical}</span>
+          <span className="text-blue-500">● {t.emotional}</span>
+          <span className="text-green-500">● {t.intellectual}</span>
         </div>
       </div>
     </div>
@@ -294,24 +337,47 @@ function Dashboard({
 // PROFILE COMPONENT
 // ============================================
 function Profile({ profile, matrix }: { profile: NumerologyProfile; matrix: PythagorasMatrix }) {
+  const { t } = useLang();
+  
   const numbers = [
-    { label: 'Número de Vida', value: profile.lifeNumber, desc: 'Tu misión en esta vida' },
-    { label: 'Expresión', value: profile.expressionNumber, desc: 'Cómo te manifiestas' },
-    { label: 'Alma', value: profile.soulNumber, desc: 'Tu deseo interno' },
-    { label: 'Personalidad', value: profile.personalityNumber, desc: 'Cómo te ven otros' },
+    { label: t.lifeNumber, value: profile.lifeNumber, desc: t.lifeMission },
+    { label: t.expression, value: profile.expressionNumber, desc: t.howYouManifest },
+    { label: t.soul, value: profile.soulNumber, desc: t.innerDesire },
+    { label: t.personality, value: profile.personalityNumber, desc: t.howOthersSee },
   ];
+  
+  const meaning = t.meanings[profile.lifeNumber as keyof typeof t.meanings];
+  
+  // Translate matrix strengths/weaknesses
+  const translateMatrixItems = (items: string[]) => {
+    const matrixMap: Record<string, number> = {
+      'Carácter/Voluntad': 1, 'Character/Will': 1,
+      'Energía/Magnetismo': 2, 'Energy/Magnetism': 2,
+      'Creatividad/Interés': 3, 'Creativity/Interest': 3,
+      'Salud/Estabilidad': 4, 'Health/Stability': 4,
+      'Intuición/Lógica': 5, 'Intuition/Logic': 5,
+      'Trabajo/Compromiso': 6, 'Work/Commitment': 6,
+      'Suerte/Talento': 7, 'Luck/Talent': 7,
+      'Responsabilidad/Deber': 8, 'Responsibility/Duty': 8,
+      'Memoria/Inteligencia': 9, 'Memory/Intelligence': 9
+    };
+    return items.map(item => {
+      const num = matrixMap[item];
+      return num ? t.matrixMeanings[num as keyof typeof t.matrixMeanings] : item;
+    });
+  };
   
   return (
     <div className="space-y-4">
       {/* 4 Numbers */}
       <div className="grid grid-cols-2 gap-3">
         {numbers.map(({ label, value, desc }) => {
-          const meaning = numberMeanings[value];
+          const numMeaning = t.meanings[value as keyof typeof t.meanings];
           return (
             <div key={label} className="card-mystic p-3">
               <div className="text-3xl font-bold text-gold mb-1">{value}</div>
               <div className="text-white text-sm font-medium">{label}</div>
-              <div className="text-white/50 text-xs">{meaning?.title}</div>
+              <div className="text-white/50 text-xs">{numMeaning?.title}</div>
             </div>
           );
         })}
@@ -319,14 +385,14 @@ function Profile({ profile, matrix }: { profile: NumerologyProfile; matrix: Pyth
       
       {/* Number Meaning */}
       <div className="card-mystic p-4">
-        <h3 className="text-gold font-semibold mb-2">Tu Número de Vida: {profile.lifeNumber}</h3>
-        <p className="text-white/70 text-sm">{numberMeanings[profile.lifeNumber]?.description}</p>
+        <h3 className="text-gold font-semibold mb-2">{t.yourLifeNumber} {profile.lifeNumber}</h3>
+        <p className="text-white/70 text-sm">{meaning?.description}</p>
       </div>
       
       {/* Pythagoras Matrix */}
       <div className="card-mystic p-4">
         <h3 className="text-white/80 text-sm mb-3 flex items-center gap-2">
-          <Grid3X3 size={16} /> Matriz de Pitágoras
+          <Grid3X3 size={16} /> {t.pythagorasMatrix}
         </h3>
         
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -350,15 +416,15 @@ function Profile({ profile, matrix }: { profile: NumerologyProfile; matrix: Pyth
         
         {matrix.strengths.length > 0 && (
           <div className="mb-2">
-            <span className="text-green-400 text-xs">✓ Fortalezas: </span>
-            <span className="text-white/70 text-xs">{matrix.strengths.join(', ')}</span>
+            <span className="text-green-400 text-xs">{t.strengths} </span>
+            <span className="text-white/70 text-xs">{translateMatrixItems(matrix.strengths).join(', ')}</span>
           </div>
         )}
         
         {matrix.weaknesses.length > 0 && (
           <div>
-            <span className="text-yellow-400 text-xs">○ A desarrollar: </span>
-            <span className="text-white/70 text-xs">{matrix.weaknesses.join(', ')}</span>
+            <span className="text-yellow-400 text-xs">{t.toDevelop} </span>
+            <span className="text-white/70 text-xs">{translateMatrixItems(matrix.weaknesses).join(', ')}</span>
           </div>
         )}
       </div>
@@ -370,6 +436,7 @@ function Profile({ profile, matrix }: { profile: NumerologyProfile; matrix: Pyth
 // CALENDAR COMPONENT
 // ============================================
 function CalendarView({ birthDate, lifeNumber }: { birthDate: Date; lifeNumber: number }) {
+  const { t } = useLang();
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -397,14 +464,12 @@ function CalendarView({ birthDate, lifeNumber }: { birthDate: Date; lifeNumber: 
     days.push({ day: i, status, isToday: i === today.getDate() });
   }
   
-  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  
   return (
     <div className="card-mystic p-4">
-      <h3 className="text-gold font-semibold text-center mb-4">{monthNames[month]} {year}</h3>
+      <h3 className="text-gold font-semibold text-center mb-4">{t.months[month]} {year}</h3>
       
       <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-        {['D','L','M','M','J','V','S'].map((d, i) => (
+        {t.days.map((d, i) => (
           <div key={i} className="text-white/50">{d}</div>
         ))}
       </div>
@@ -426,16 +491,15 @@ function CalendarView({ birthDate, lifeNumber }: { birthDate: Date; lifeNumber: 
             }`}
           >
             {d?.day}
-            {d?.status === 'isopsefia' && <span className="absolute text-[8px]">⭐</span>}
           </div>
         ))}
       </div>
       
       <div className="flex flex-wrap justify-center gap-3 mt-4 text-xs">
-        <span className="text-green-400">● Día de poder</span>
-        <span className="text-green-300">● Favorable</span>
-        <span className="text-red-400">● Crítico</span>
-        <span className="text-purple-300">⭐ Resonancia</span>
+        <span className="text-green-400">{t.dayPower}</span>
+        <span className="text-green-300">{t.dayFavorable}</span>
+        <span className="text-red-400">{t.dayCritical}</span>
+        <span className="text-purple-300">{t.dayResonance}</span>
       </div>
     </div>
   );
@@ -445,6 +509,7 @@ function CalendarView({ birthDate, lifeNumber }: { birthDate: Date; lifeNumber: 
 // COMPATIBILITY COMPONENT  
 // ============================================
 function Compatibility({ userData }: { userData: UserData }) {
+  const { t } = useLang();
   const [otherName, setOtherName] = useState('');
   const [otherBirth, setOtherBirth] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -473,14 +538,14 @@ function Compatibility({ userData }: { userData: UserData }) {
   return (
     <div className="space-y-4">
       <div className="card-mystic p-4">
-        <h3 className="text-gold font-semibold mb-3">Compatibilidad Numérica</h3>
+        <h3 className="text-gold font-semibold mb-3">{t.numericCompatibility}</h3>
         
         <div className="space-y-3">
           <input
             type="text"
             value={otherName}
             onChange={(e) => setOtherName(e.target.value)}
-            placeholder="Nombre de la otra persona"
+            placeholder={t.otherPersonName}
             className="w-full bg-mystic-bg border border-gold/20 rounded-lg p-3 text-white focus:border-gold focus:outline-none"
           />
           <input
@@ -494,7 +559,7 @@ function Compatibility({ userData }: { userData: UserData }) {
             disabled={!otherName || !otherBirth}
             className="w-full bg-gold text-mystic-bg font-semibold py-3 rounded-lg disabled:opacity-50"
           >
-            Calcular compatibilidad
+            {t.calculateCompatibility}
           </button>
         </div>
       </div>
@@ -503,14 +568,14 @@ function Compatibility({ userData }: { userData: UserData }) {
         <div className="card-mystic p-4">
           <div className="text-center mb-4">
             <div className="text-5xl font-bold gradient-gold">{result.overall}%</div>
-            <div className="text-white/60 text-sm">Compatibilidad general</div>
+            <div className="text-white/60 text-sm">{t.overallCompatibility}</div>
           </div>
           
           <div className="space-y-2">
             {[
-              { label: 'Misión de vida', value: result.lifeRes },
-              { label: 'Expresión', value: result.expressionRes },
-              { label: 'Conexión de almas', value: result.soulRes },
+              { label: t.lifeMissionCompat, value: result.lifeRes },
+              { label: t.expressionCompat, value: result.expressionRes },
+              { label: t.soulConnection, value: result.soulRes },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center">
                 <span className="text-white/70 text-sm">{label}</span>
