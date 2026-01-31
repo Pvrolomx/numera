@@ -12,6 +12,10 @@
 
 body {
   background: var(--mystic-bg);
+  background-image: url('https://q3kmdq0bwilkumjv.public.blob.vercel-storage.com/image-rIis9F4AmALzuYKmaOl8M61MXLaZzk.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: #fff;
   min-height: 100vh;
 }
@@ -23,7 +27,9 @@ body {
 }
 
 .card-mystic {
-  background: var(--mystic-card);
+  background: rgba(18, 18, 42, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 1rem;
 }
