@@ -189,21 +189,22 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
       {/* Language Toggle */}
       <button
         onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
-        className="absolute right-4 top-4 flex items-center gap-1 text-xs text-white/50 hover:text-gold transition-colors bg-mystic-card px-2 py-1 rounded-full border border-gold/20"
+        className="absolute right-4 top-4 flex items-center gap-1 text-xs text-white/50 hover:text-gold transition-colors bg-mystic-card px-2 py-1 rounded-full border border-gold/20 z-10"
       >
         <Globe size={14} />
         {lang.toUpperCase()}
       </button>
       
+      <div className="card-mystic p-8 w-full max-w-sm">
       <div className="text-center mb-8">
         <Sparkles className="text-gold mx-auto mb-4" size={48} />
         <h1 className="text-4xl font-bold gradient-gold mb-2" style={{textShadow: "0 0 30px rgba(212,175,55,0.8), 0 0 60px rgba(212,175,55,0.4)"}}>{t.appName}</h1>
-        <p className="text-gold/80 font-medium" style={{textShadow: "0 2px 10px rgba(0,0,0,0.8)"}}>{t.onboardingTitle}</p>
+        <p className="text-gold font-medium text-lg">{t.onboardingTitle}</p>
       </div>
       
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full space-y-4">
         <div>
-          <label className="block text-gold text-sm mb-2 font-medium" style={{textShadow: "0 2px 8px rgba(0,0,0,0.9)"}}>{t.nameLabel}</label>
+          <label className="block text-white text-sm mb-2 font-semibold">{t.nameLabel}</label>
           <input
             type="text"
             value={name}
@@ -214,7 +215,7 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
         </div>
         
         <div>
-          <label className="block text-gold text-sm mb-2 font-medium" style={{textShadow: "0 2px 8px rgba(0,0,0,0.9)"}}>{t.birthLabel}</label>
+          <label className="block text-white text-sm mb-2 font-semibold">{t.birthLabel}</label>
           <input
             type="date"
             value={birthDate}
@@ -230,6 +231,7 @@ function Onboarding({ onComplete }: { onComplete: (data: UserData) => void }) {
         >
           {t.calculateBtn}
         </button>
+      </div>
       </div>
     </main>
   );
