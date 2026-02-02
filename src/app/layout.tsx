@@ -5,8 +5,19 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'NUMERA - Tu Código Personal',
-  description: 'Numerología + Biorritmos - Matemáticas puras para descifrar tu destino',
+  title: 'NUMERA - Tu Codigo Personal',
+  description: 'Numerologia + Biorritmos - Matematicas puras para descifrar tu destino',
+  manifest: '/manifest.json',
+  themeColor: '#6366f1',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'NUMERA',
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
 }
 
 export default function RootLayout({
